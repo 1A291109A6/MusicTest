@@ -27,70 +27,47 @@ var sizeRatio = canvas.width / 1280;
 const audioPlayer = document.getElementById('audioPlayer');
 audioPlayer.style.display = 'none';
 
+const audioFilePath = 'music.mp3';
+
 function init() {
-  const input = document.getElementById('fileInput');
-  input.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    const reader = new FileReader();
+  const audioContext = new AudioContext();
 
-    reader.onload = (event) => {
-      audioPlayer.src = URL.createObjectURL(file);
-      const audioContext = new AudioContext();
-
-      let decodeFunction;
-      switch (file.type) {
-        case 'audio/wav':
-          decodeFunction = audioContext.decodeAudioData;
-          break;
-        case 'audio/mp3':
-        case 'audio/mpeg':
-        case 'audio/m4a':
-          decodeFunction = audioContext.decodeAudioData.bind(audioContext, event.target.result);
-          break;
-        case 'audio/ogg':
-          decodeFunction = audioContext.decodeAudioData.bind(audioContext, event.target.result);
-          break;
-        default:
-          throw new Error(`Unsupported file type: ${file.type}`);
+  fetch(audioFilePath)
+    .then(response => response.arrayBuffer())
+    .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+    .then(audioBuffer => {
+      const channelData = audioBuffer.getChannelData(0);
+      duration = audioBuffer.duration;
+      let audioData = [];
+      for (let i = 0; i < channelData.length; i++) {
+        audioData.push(channelData[i]);
       }
+      waveData = audioData;
 
-      decodeFunction((buffer) => {
-        const channelData = buffer.getChannelData(0);
-        duration = buffer.duration;
-        let audioData = [];
-        for (let i = 0; i < channelData.length; i++) {
-          audioData.push(channelData[i]);
-        }
-        waveData = audioData;
+      const loadingBar = document.createElement('div');
+      loadingBar.textContent = 'Music loaded!!';
+      loadingBar.style.width = '90%';
+      loadingBar.style.height = '50px';
+      loadingBar.style.backgroundColor = '#229922';
+      loadingBar.style.color = 'white';
+      loadingBar.style.textAlign = 'center';
+      loadingBar.style.lineHeight = '50px';
+      loadingBar.style.position = 'fixed';
+      loadingBar.style.top = '10px';
+      loadingBar.style.left = '50%';
+      loadingBar.style.transform = 'translateX(-50%)';
+      loadingBar.style.borderRadius = '10px';
+      document.body.insertBefore(loadingBar, document.body.firstChild);
 
-        const loadingBar = document.createElement('div');
-        loadingBar.textContent = 'Music loaded!!';
-        loadingBar.style.width = '90%';
-        loadingBar.style.height = '50px';
-        loadingBar.style.backgroundColor = '#229922';
-        loadingBar.style.color = 'white';
-        loadingBar.style.textAlign = 'center';
-        loadingBar.style.lineHeight = '50px';
-        loadingBar.style.position = 'fixed';
-        loadingBar.style.top = '10px';
-        loadingBar.style.left = '50%';
-        loadingBar.style.transform = 'translateX(-50%)';
-        loadingBar.style.borderRadius = '10px';
-        document.body.insertBefore(loadingBar, document.body.firstChild);
-
+      setTimeout(() => {
+        loadingBar.style.transition = 'opacity 1.5s ease';
+        loadingBar.style.opacity = '0';
         setTimeout(() => {
-          loadingBar.style.transition = 'opacity 1.5s ease';
-          loadingBar.style.opacity = '0';
-          setTimeout(() => {
-            document.body.removeChild(loadingBar);
-          }, 1500);
-        }, 3000);
-      });
-      
-    }
-    reader.readAsArrayBuffer(file);
-  });
-};
+          document.body.removeChild(loadingBar);
+        }, 1500);
+      }, 3000);
+    });
+}
 
 const squareSigma = 50;
 FIR_list = [];
